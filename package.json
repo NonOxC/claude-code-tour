@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/NonOxC/claude-code-tour#readme",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.106.0"
   },
   "categories": [
     "Education",
@@ -58,7 +58,7 @@
       }
     ],
     "viewsContainers": {
-      "activitybar": [
+      "secondarySidebar": [
         {
           "id": "claudeCodeTour",
           "title": "Claude Code Tour",
@@ -151,7 +151,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.x",
-    "@types/vscode": "^1.85.0",
+    "@types/vscode": "^1.106.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^2.24.0",
     "glob": "^13.0.6",

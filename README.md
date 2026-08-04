@@ -19,7 +19,7 @@ Honest status: the full suite is run on Windows. The POSIX resolution branch is 
 
 ## Usage
 
-Open a folder, then click the **mortarboard icon** in the Activity Bar. The panel has a question box and one-click starters — no command palette required.
+Open a folder, then open the **Secondary Side Bar** (`Ctrl`/`Cmd`+`Alt`+`B`) and pick **Claude Code Tour**. It lives on the right on purpose: the file explorer keeps the left, and the editor stays visible in the middle so you can watch the tour jump between files. The panel has a question box and one-click starters — no command palette required.
 
 Three ways in:
 
@@ -28,6 +28,10 @@ Three ways in:
 - **Command Palette → Claude Code Tour: Ask About This Code**, which just focuses the panel's input.
 
 Then step through with **Next** / **Prev**, the arrow keys, `Alt+←` / `Alt+→` from anywhere, or by clicking any step in the outline. The editor scrolls to each range and pulses it briefly so your eye can find it.
+
+### Seeing the shape of the tour
+
+Under **Where this tour goes**, the panel maps every file the tour visits, grouped by directory in the order it first reaches them, with a numbered badge per step. A marker travels down to whichever file the current step is in, so a jump across the codebase reads as movement rather than as two unrelated highlights. Click any badge to jump straight to that step.
 
 ## Settings
 

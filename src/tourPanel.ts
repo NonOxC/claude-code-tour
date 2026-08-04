@@ -130,6 +130,14 @@ export class TourPanel implements vscode.WebviewViewProvider {
       <button id="end-btn" type="button">End tour</button>
     </div>
 
+    <section id="filemap-section" hidden>
+      <h2 class="section-heading">Where this tour goes</h2>
+      <div id="filemap">
+        <div id="filemap-marker" aria-hidden="true"></div>
+        <div id="filemap-rows"></div>
+      </div>
+    </section>
+
     <nav id="outline" aria-label="Tour steps"></nav>
   </div>
   <script nonce="${nonce}" src="${scriptUri}"></script>

@@ -6,10 +6,12 @@ All notable changes to the Claude Code Tour extension are documented here.
 
 ### Changed
 
+- **The panel now opens in the Secondary Side Bar (right) instead of the Activity Bar (left).** It was competing with the file explorer for the same space; on the right, the explorer stays put and the editor remains visible in the middle so you can watch the tour move between files. This uses the `secondarySidebar` view container contribution, which requires **VS Code 1.106+** — the minimum engine version has been raised accordingly, because declaring it on older builds makes views fall back to the Explorer and can disturb other extensions' view positions.
 - **Asking a question no longer opens a prompt at the top of the window.** The `Ask About This Code` command now reveals the panel and focuses its own input. A modal quick-input is a worse place to type than the panel that is about to show the answer, and it hid the suggestions.
 
 ### Added
 
+- **A file map of the tour.** "Where this tour goes" lists every file the tour visits, grouped by directory in the order it first reaches them, with a clickable numbered badge per step. A marker travels to the current step's file, so jumping across the codebase reads as movement through a structure rather than as two unrelated highlight states.
 - **Right-click → Explain This With a Tour.** Select code in the editor and the question is composed for you from the file and line range; with no selection it asks about the whole file.
 - **Empty state with one-click starters**, so the panel is usable without thinking up a question.
 - **Motion cues:** a progress bar across the tour, steps that slide up as they replace one another, an animated marker on the current outline item, and a brief pulse on the editor range when it comes into view. All disabled under `prefers-reduced-motion` — every cue is also carried by colour, position or text.

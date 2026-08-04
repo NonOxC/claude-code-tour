@@ -22,6 +22,110 @@
   const welcomeEl = document.getElementById('welcome');
   const progressTrackEl = document.getElementById('progress-track');
   const progressBarEl = document.getElementById('progress-bar');
+  const filemapSectionEl = document.getElementById('filemap-section');
+  const filemapRowsEl = document.getElementById('filemap-rows');
+  const filemapMarkerEl = document.getElementById('filemap-marker');
+
+  /** file path -> its row element, so the marker can find where to travel to. */
+  let fileRows = new Map();
+
+  function splitPath(p) {
+    const parts = String(p).split(/[\\/]/);
+    return { dir: parts.slice(0, -1).join('/'), name: parts[parts.length - 1] };
+  }
+
+  /**
+   * Build a map of the files this tour visits, in the order it first reaches them,
+   * grouped under their directory. The point is to make the shape of the codebase
+   * legible - which folders are involved, and how the tour moves between them.
+   */
+  function renderFileMap() {
+    filemapRowsEl.textContent = '';
+    fileRows = new Map();
+    if (!state.plan) {
+      filemapSectionEl.hidden = true;
+      return;
+    }
+
+    const order = [];
+    const stepsByFile = new Map();
+    state.plan.steps.forEach((step, i) => {
+      if (!stepsByFile.has(step.file)) {
+        stepsByFile.set(step.file, []);
+        order.push(step.file);
+      }
+      stepsByFile.get(step.file).push(i);
+    });
+
+    let lastDir = null;
+    for (const file of order) {
+      const { dir, name } = splitPath(file);
+      if (dir !== lastDir) {
+        const dirEl = document.createElement('div');
+        dirEl.className = 'fm-dir';
+        dirEl.textContent = dir || '(root)';
+        filemapRowsEl.appendChild(dirEl);
+        lastDir = dir;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'fm-file';
+      row.dataset.file = file;
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'fm-name';
+      nameEl.textContent = name;
+      row.appendChild(nameEl);
+
+      const dots = document.createElement('span');
+      dots.className = 'fm-dots';
+      for (const stepIndex of stepsByFile.get(file)) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'fm-dot';
+        dot.dataset.step = String(stepIndex);
+        dot.title = state.plan.steps[stepIndex].title;
+        dot.textContent = String(stepIndex + 1);
+        dot.addEventListener('click', () => vscode.postMessage({ type: 'goto', index: stepIndex }));
+        dots.appendChild(dot);
+      }
+      row.appendChild(dots);
+
+      filemapRowsEl.appendChild(row);
+      fileRows.set(file, row);
+    }
+
+    filemapSectionEl.hidden = false;
+  }
+
+  /** Slide the marker to the file the current step lives in. */
+  function updateFileMap() {
+    if (!state.plan) {
+      return;
+    }
+    const step = state.plan.steps[state.index];
+    if (!step) {
+      return;
+    }
+
+    for (const [file, row] of fileRows) {
+      row.classList.toggle('is-current', file === step.file);
+    }
+    for (const dot of filemapRowsEl.querySelectorAll('.fm-dot')) {
+      dot.classList.toggle('is-current', Number(dot.dataset.step) === state.index);
+    }
+
+    const row = fileRows.get(step.file);
+    if (!row) {
+      filemapMarkerEl.style.opacity = '0';
+      return;
+    }
+    // Travelling to the row's offset is what makes a jump between files visible as
+    // movement rather than as two unrelated highlight states.
+    filemapMarkerEl.style.opacity = '1';
+    filemapMarkerEl.style.transform = `translateY(${row.offsetTop}px)`;
+    filemapMarkerEl.style.height = `${row.offsetHeight}px`;
+  }
 
   const state = { plan: null, index: 0, resolution: 'exact', note: '' };
 
@@ -76,6 +180,9 @@
     welcomeEl.hidden = false;
     progressTrackEl.hidden = true;
     progressBarEl.style.width = '0%';
+    filemapSectionEl.hidden = true;
+    filemapRowsEl.textContent = '';
+    fileRows = new Map();
     prevBtn.disabled = true;
     nextBtn.disabled = true;
     endBtn.disabled = true;
@@ -155,6 +262,7 @@
     nextBtn.disabled = state.index >= state.plan.steps.length - 1;
     endBtn.disabled = false;
     renderOutline();
+    updateFileMap();
   }
 
   askForm.addEventListener('submit', (e) => {
@@ -238,6 +346,7 @@
         setStatus(bits.length ? `Tour ready · ${bits.join(' · ')}` : '', false);
         summaryEl.textContent = msg.plan.summary;
         welcomeEl.hidden = true;
+        renderFileMap();
         renderStep();
         break;
       }

@@ -91,7 +91,10 @@ export function activate(context: vscode.ExtensionContext): void {
    * than the panel that is about to show the answer, and it hides the suggestions.
    */
   async function askFlow(prefill?: string): Promise<void> {
-    await vscode.commands.executeCommand('workbench.view.extension.claudeCodeTour');
+    // The per-view focus command VS Code generates works wherever the view lives;
+    // `workbench.view.extension.<container>` is tied to a specific container and
+    // breaks the moment the user drags the panel somewhere else.
+    await vscode.commands.executeCommand('claudeCodeTour.panel.focus');
     panel.postMessage({ type: 'focusInput', prefill });
   }
 

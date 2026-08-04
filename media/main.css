@@ -299,3 +299,107 @@ button:disabled {
     transition: none;
   }
 }
+
+/* ── File map ───────────────────────────────────────────────────────────────
+   Shows which files the tour visits, grouped by directory in the order it
+   first reaches them, with a marker that travels between them. The travel is
+   the point: without it, moving to another file reads as two unrelated
+   highlight states rather than as movement through the codebase. */
+.section-heading {
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+  margin: 0 0 6px;
+}
+
+#filemap-section {
+  margin-top: 14px;
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+  padding-top: 10px;
+}
+
+#filemap {
+  position: relative;
+}
+
+#filemap-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  opacity: 0;
+  border-radius: 1px;
+  background: var(--vscode-focusBorder);
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1), height 320ms ease, opacity 160ms ease;
+}
+
+.fm-dir {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+  margin: 6px 0 2px 10px;
+  opacity: 0.8;
+}
+
+.fm-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px 3px 12px;
+  border-radius: 2px;
+  transition: background-color 200ms ease, padding-left 220ms ease;
+}
+
+.fm-file.is-current {
+  background: var(--vscode-list-hoverBackground);
+  padding-left: 16px;
+}
+
+.fm-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm-file.is-current .fm-name {
+  font-weight: 600;
+}
+
+.fm-dots {
+  display: flex;
+  gap: 3px;
+  flex: none;
+}
+
+.fm-dot {
+  min-width: 18px;
+  padding: 0 4px;
+  font-size: 0.8em;
+  line-height: 1.5;
+  border-radius: 9px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  opacity: 0.55;
+  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fm-dot:hover {
+  opacity: 0.85;
+}
+
+.fm-dot.is-current {
+  opacity: 1;
+  transform: scale(1.25);
+  background: var(--vscode-focusBorder);
+  color: var(--vscode-button-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #filemap-marker,
+  .fm-file,
+  .fm-dot {
+    transition: none;
+  }
+}
