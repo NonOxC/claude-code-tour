@@ -19,13 +19,14 @@ Honest status: the full suite is run on Windows. The POSIX resolution branch is 
 
 ## Usage
 
-Open a folder and click **🎓 Tour** in the status bar, bottom-left. That opens the panel wherever it lives and puts the cursor in the question box.
+Open a folder and click the **orange mortarboard** in the top-right of the editor, next to the other editor actions. That opens the panel wherever it lives and puts the cursor in the question box. The same button is also in the status bar, bottom-left.
 
 The panel sits in the **Secondary Side Bar** (right) on purpose: the file explorer keeps the left, and the editor stays visible in the middle so you can watch the tour jump between files. You can also open it with `Ctrl`/`Cmd`+`Alt`+`B`, or drag it anywhere you prefer — the status bar button follows it.
 
 Ways in:
 
-- **🎓 Tour in the status bar** — always visible, opens the panel from anywhere.
+- **The orange mortarboard, top-right of the editor** — the main way in.
+- **🎓 Tour in the status bar** — always visible, even with no file open.
 - **Type a question** in the panel, or click a suggested starter.
 - **Select code → right-click → Explain This With a Tour.** The question is written for you from the file and line range.
 - **Command Palette → Claude Code Tour: Ask About This Code**, which just focuses the panel's input.

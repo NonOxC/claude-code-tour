@@ -36,7 +36,7 @@
       {
         "command": "claudeCodeTour.ask",
         "title": "Claude Code Tour: Ask About This Code",
-        "icon": "$(comment-discussion)"
+        "icon": "media/tour-icon.svg"
       },
       {
         "command": "claudeCodeTour.explainSelection",
@@ -64,7 +64,7 @@
         {
           "id": "claudeCodeTour",
           "title": "Claude Code Tour",
-          "icon": "$(mortar-board)"
+          "icon": "media/tour-icon.svg"
         }
       ]
     },
@@ -94,9 +94,13 @@
       ],
       "editor/title": [
         {
+          "command": "claudeCodeTour.ask",
+          "group": "navigation@1"
+        },
+        {
           "command": "claudeCodeTour.explainSelection",
           "when": "editorHasSelection",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ]
     },

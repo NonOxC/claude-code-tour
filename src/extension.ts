@@ -19,6 +19,8 @@ export function activate(context: vscode.ExtensionContext): void {
   statusItem.text = '$(mortar-board) Tour';
   statusItem.tooltip = 'Ask Claude for a guided tour of this code';
   statusItem.command = 'claudeCodeTour.ask';
+  // Matches the orange of the editor-title icon so the two read as the same feature.
+  statusItem.color = '#E8912D';
   statusItem.show();
   context.subscriptions.push(statusItem);
 
