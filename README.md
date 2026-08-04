@@ -33,25 +33,6 @@ Ways in:
 
 Then step through with **Next** / **Prev**, the arrow keys, `Alt+←` / `Alt+→` from anywhere, or by clicking any step in the outline. The editor scrolls to each range and pulses it briefly so your eye can find it.
 
-### In the file explorer
-
-Every file a tour visits is badged with its step number and tinted orange in VS Code's own explorer, and the badge becomes a **▶** on whichever file the current step is in — so the marker moves through the real tree as you step. Decorations propagate to parent folders, so the directories a tour passes through light up even while collapsed, and you can see the shape of a tour without expanding anything.
-
-Turn it off with `claudeCodeTour.highlightInExplorer`.
-
-To make the tree also scroll and expand to each file, VS Code's built-in `explorer.autoReveal` (on by default) already does it, since each step opens its file. `claudeCodeTour.revealInExplorer` forces it explicitly, but it's off by default because it moves keyboard focus into the explorer.
-
-### Seeing the shape of the tour
-
-Under **Where this tour goes**, the panel maps every file the tour visits, grouped by directory in the order it first reaches them, with a numbered badge per step. A marker travels down to whichever file the current step is in, so a jump across the codebase reads as movement rather than as two unrelated highlights. Click any badge to jump straight to that step.
-
-## Settings
-
-- `claudeCodeTour.claudePath` - path to the `claude` executable if it's not on your PATH.
-- `claudeCodeTour.model` - optional model override passed to the CLI.
-- `claudeCodeTour.maxCostUsd` - optional spend cap per question (`0` disables it). Recommended: see the cost note below.
-- `claudeCodeTour.timeoutSeconds` - how long to wait before giving up (default 300).
-
 ## Cost and latency
 
 This extension uses your existing Claude Code login — there is no separate API key to set up. But each question spawns its own fresh Claude Code session, which explores the repository from scratch (12-17 tool calls in practice). That exploration is what costs time and usage.

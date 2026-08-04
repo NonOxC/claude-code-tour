@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { TourPanel } from './tourPanel';
-import { TourDecorationProvider } from './fileDecorations';
 import { TourController } from './tourController';
 import { WebviewToExtensionMessage } from './tourTypes';
 import { RunTourOptions, preflight, clearCliCache } from './claudeRunner';
@@ -10,51 +8,7 @@ const INSTALL_URL = 'https://claude.com/claude-code';
 
 export function activate(context: vscode.ExtensionContext): void {
   const panel = new TourPanel(context.extensionUri);
-
-  /** Tracks the folder the current tour is exploring, for resolving step paths. */
-  let activeRoot: string | undefined;
-
-  const decorations = new TourDecorationProvider((file) => {
-    if (!activeRoot) {
-      return undefined;
-    }
-    const abs = path.resolve(activeRoot, file);
-    const rel = path.relative(path.resolve(activeRoot), abs);
-    // Same containment rule as the controller: never decorate outside the workspace.
-    return rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? abs : undefined;
-  });
-
-  const controller = new TourController((msg) => panel.postMessage(msg), decorations);
-
-  const applyDecorationSetting = (): void => {
-    decorations.setEnabled(
-      vscode.workspace.getConfiguration('claudeCodeTour').get<boolean>('highlightInExplorer', true),
-    );
-  };
-  applyDecorationSetting();
-
-  context.subscriptions.push(
-    vscode.window.registerFileDecorationProvider(decorations),
-    decorations,
-    vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('claudeCodeTour.highlightInExplorer')) {
-        applyDecorationSetting();
-      }
-    }),
-    // Opt-in: revealing steals keyboard focus, and VS Code's own explorer.autoReveal
-    // already follows the active editor without doing that.
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (!editor) {
-        return;
-      }
-      const reveal = vscode.workspace
-        .getConfiguration('claudeCodeTour')
-        .get<boolean>('revealInExplorer', false);
-      if (reveal) {
-        void vscode.commands.executeCommand('revealInExplorer', editor.document.uri);
-      }
-    }),
-  );
+  const controller = new TourController((msg) => panel.postMessage(msg));
 
   // A view in the Secondary Side Bar contributes NO Activity Bar icon, and when
   // that sidebar is closed there is no affordance at all - so without this the
@@ -133,7 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
       maxCostUsd: typeof maxCost === 'number' && maxCost > 0 ? maxCost : undefined,
       timeoutMs:
         typeof timeoutSeconds === 'number' && timeoutSeconds > 0 ? Math.round(timeoutSeconds * 1000) : undefined,
-      workspaceRoot: (activeRoot = folder.uri.fsPath),
+      workspaceRoot: folder.uri.fsPath,
     };
   }
 
