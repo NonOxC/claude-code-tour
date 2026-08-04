@@ -1,0 +1,129 @@
+{
+  "name": "claude-code-tour",
+  "displayName": "Claude Code Tour",
+  "description": "Ask Claude a question about your code and get a guided, step-by-step tour that jumps to and highlights the relevant lines while explaining them.",
+  "version": "0.1.0",
+  "publisher": "matthew-you",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NonOxC/claude-code-tour.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NonOxC/claude-code-tour/issues"
+  },
+  "homepage": "https://github.com/NonOxC/claude-code-tour#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education",
+    "Other"
+  ],
+  "keywords": [
+    "claude",
+    "explain",
+    "tour",
+    "walkthrough",
+    "onboarding"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeCodeTour.ask",
+        "title": "Claude Code Tour: Ask About This Code",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "claudeCodeTour.next",
+        "title": "Claude Code Tour: Next Step",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "claudeCodeTour.prev",
+        "title": "Claude Code Tour: Previous Step",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "claudeCodeTour.end",
+        "title": "Claude Code Tour: End Tour"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeCodeTour",
+          "title": "Claude Code Tour",
+          "icon": "$(mortar-board)"
+        }
+      ]
+    },
+    "views": {
+      "claudeCodeTour": [
+        {
+          "type": "webview",
+          "id": "claudeCodeTour.panel",
+          "name": "Tour"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeCodeTour.ask",
+          "when": "view == claudeCodeTour.panel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Code Tour",
+      "properties": {
+        "claudeCodeTour.claudePath": {
+          "type": "string",
+          "default": "claude",
+          "description": "Path to the Claude Code CLI executable. Change this if 'claude' is not on your PATH."
+        },
+        "claudeCodeTour.model": {
+          "type": "string",
+          "default": "",
+          "description": "Optional model override passed to the Claude Code CLI (e.g. 'sonnet', 'opus'). Leave blank to use your CLI's default."
+        },
+        "claudeCodeTour.maxCostUsd": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Optional spend cap in USD for a single question. Exploring a large codebase can cost more than you expect (measured ~$0.40 on a mid-size React app). 0 disables the cap."
+        },
+        "claudeCodeTour.timeoutSeconds": {
+          "type": "number",
+          "default": 300,
+          "minimum": 30,
+          "description": "How long to wait for Claude before giving up. Typical questions take 60-90 seconds; large repositories take longer."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "typecheck": "tsc -p . --noEmit",
+    "pretest": "npm run compile",
+    "test": "node --test --test-reporter=spec out/test/claudeRunner.test.js out/test/tourTypes.test.js out/test/anchorResolver.test.js",
+    "test:integration": "npm run compile && node out/integration/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^2.24.0",
+    "glob": "^13.0.6",
+    "mocha": "^11.8.0",
+    "typescript": "^5.4.0"
+  }
+}
