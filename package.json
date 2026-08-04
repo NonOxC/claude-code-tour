@@ -116,6 +116,28 @@
         "when": "claudeCodeTour.active"
       }
     ],
+    "colors": [
+      {
+        "id": "claudeCodeTour.currentFile",
+        "description": "Explorer colour for the file the current tour step is in.",
+        "defaults": {
+          "dark": "#E8912D",
+          "light": "#B4650A",
+          "highContrast": "#E8912D",
+          "highContrastLight": "#8A4E06"
+        }
+      },
+      {
+        "id": "claudeCodeTour.tourFile",
+        "description": "Explorer colour for other files visited by the current tour.",
+        "defaults": {
+          "dark": "#B0762F",
+          "light": "#8A6224",
+          "highContrast": "#B0762F",
+          "highContrastLight": "#6B4A18"
+        }
+      }
+    ],
     "configuration": {
       "title": "Claude Code Tour",
       "properties": {
@@ -134,6 +156,16 @@
           "default": 0,
           "minimum": 0,
           "description": "Optional spend cap in USD for a single question. Exploring a large codebase can cost more than you expect (measured ~$0.40 on a mid-size React app). 0 disables the cap."
+        },
+        "claudeCodeTour.highlightInExplorer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Badge and colour the files a tour visits in the file explorer, with a marker on the current step. Parent folders are tinted too, so you can see which parts of the tree a tour passes through."
+        },
+        "claudeCodeTour.revealInExplorer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also scroll and expand the file explorer to each step's file. Off by default because it moves keyboard focus to the explorer; VS Code's own 'explorer.autoReveal' setting already does this without stealing focus."
         },
         "claudeCodeTour.timeoutSeconds": {
           "type": "number",

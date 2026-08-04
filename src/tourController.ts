@@ -29,7 +29,14 @@ export class TourController implements vscode.Disposable {
   private decoratedUri: string | undefined;
   private readonly disposables: vscode.Disposable[] = [];
 
-  constructor(private readonly post: (msg: ExtensionToWebviewMessage) => void) {
+  constructor(
+    private readonly post: (msg: ExtensionToWebviewMessage) => void,
+    private readonly decorations?: {
+      setPlan: (plan: TourPlan) => void;
+      setCurrent: (file: string) => void;
+      clear: () => void;
+    },
+  ) {
     this.decorationType = vscode.window.createTextEditorDecorationType({
       isWholeLine: true,
       backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
@@ -83,6 +90,7 @@ export class TourController implements vscode.Disposable {
       if (myGeneration !== this.generation) {
         return;
       }
+      this.decorations?.setPlan(plan);
       this.post({ type: 'plan', plan, index: 0 });
       await this.showStep(myGeneration);
     } catch (err) {
@@ -139,6 +147,7 @@ export class TourController implements vscode.Disposable {
     this.cancelInFlight();
     this.clearDecorations();
     this.plan = undefined;
+    this.decorations?.clear();
     this.setActiveContext(false);
     this.index = 0;
     this.post({ type: 'idle' });
@@ -257,6 +266,9 @@ export class TourController implements vscode.Disposable {
     if (!step) {
       return;
     }
+    // Move the explorer marker up front, so the tree updates even if the file
+    // itself turns out to be unopenable.
+    this.decorations?.setCurrent(step.file);
 
     const absPath = this.resolveWorkspacePath(step.file);
     if (!absPath) {

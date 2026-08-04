@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { resolveStepRange } from '../../tourController';
+import { TourDecorationProvider } from '../../fileDecorations';
 import { TourStep } from '../../tourTypes';
 
 const EXTENSION_ID = 'matthew-you.claude-code-tour';
@@ -97,6 +98,96 @@ suite('activation', () => {
     await vscode.commands.executeCommand('claudeCodeTour.next');
     await vscode.commands.executeCommand('claudeCodeTour.prev');
     await vscode.commands.executeCommand('claudeCodeTour.end');
+  });
+});
+
+suite('explorer decorations', () => {
+  function makeProvider() {
+    const folders = vscode.workspace.workspaceFolders;
+    assert.ok(folders && folders.length > 0);
+    const root = folders[0].uri.fsPath;
+    const provider = new TourDecorationProvider((file) => {
+      const abs = path.resolve(root, file);
+      const rel = path.relative(path.resolve(root), abs);
+      return rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? abs : undefined;
+    });
+    return { provider, root };
+  }
+
+  const plan = {
+    question: 'q',
+    summary: 's',
+    steps: [
+      { file: 'sample.ts', startLine: 1, endLine: 2, title: 'a', explanation: 'e' },
+      { file: 'sample.ts', startLine: 7, endLine: 9, title: 'b', explanation: 'e' },
+    ],
+  };
+
+  test('badges a file that the tour visits, and propagates to its folders', () => {
+    const { provider, root } = makeProvider();
+    provider.setPlan(plan);
+    const dec = provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'sample.ts')));
+    assert.ok(dec, 'a visited file should be decorated');
+    assert.equal(dec.badge, '1', 'badge shows the first step number in that file');
+    assert.equal(dec.propagate, true, 'parent folders must inherit so structure is visible');
+    provider.dispose();
+  });
+
+  test('marks the current file distinctly and moves the marker', () => {
+    const { provider, root } = makeProvider();
+    provider.setPlan(plan);
+    provider.setCurrent('sample.ts');
+    const dec = provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'sample.ts')));
+    assert.ok(dec);
+    assert.equal(dec.badge, '▶', 'the current file gets the marker, not a step number');
+    provider.dispose();
+  });
+
+  test('does not decorate files outside the tour or outside the workspace', () => {
+    const { provider, root } = makeProvider();
+    provider.setPlan(plan);
+    assert.equal(
+      provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'untouched.ts'))),
+      undefined,
+      'files the tour never visits must stay undecorated',
+    );
+    // A traversing path must resolve to nothing, so it can never be badged.
+    provider.setPlan({ ...plan, steps: [{ ...plan.steps[0], file: '../../escape.ts' }] });
+    assert.equal(
+      provider.provideFileDecoration(vscode.Uri.file(path.resolve(root, '../../escape.ts'))),
+      undefined,
+      'a path outside the workspace must never be decorated',
+    );
+    provider.dispose();
+  });
+
+  test('clear() removes every decoration', () => {
+    const { provider, root } = makeProvider();
+    provider.setPlan(plan);
+    provider.clear();
+    assert.equal(provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'sample.ts'))), undefined);
+    provider.dispose();
+  });
+
+  test('respects the highlightInExplorer setting', () => {
+    const { provider, root } = makeProvider();
+    provider.setPlan(plan);
+    provider.setEnabled(false);
+    assert.equal(provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'sample.ts'))), undefined);
+    provider.setEnabled(true);
+    assert.ok(provider.provideFileDecoration(vscode.Uri.file(path.join(root, 'sample.ts'))));
+    provider.dispose();
+  });
+
+  test('the contributed theme colours referenced by decorations are declared', () => {
+    const ext = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(ext);
+    const declared = new Set<string>(
+      (ext.packageJSON.contributes?.colors ?? []).map((c: { id: string }) => c.id),
+    );
+    for (const id of ['claudeCodeTour.currentFile', 'claudeCodeTour.tourFile']) {
+      assert.ok(declared.has(id), `theme colour ${id} is used but never contributed`);
+    }
   });
 });
 
