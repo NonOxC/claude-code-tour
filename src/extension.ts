@@ -85,17 +85,37 @@ export function activate(context: vscode.ExtensionContext): void {
     await controller.runTourForQuestion(question, options);
   }
 
-  async function askFlow(): Promise<void> {
-    const question = await vscode.window.showInputBox({
-      prompt: 'What do you want Claude to explain or walk you through?',
-      placeHolder: 'e.g. "How does authentication work in this project?"',
-      ignoreFocusOut: true,
-    });
-    if (!question?.trim()) {
+  /**
+   * Reveal the panel and drop the cursor in its Ask box. Deliberately NOT a
+   * showInputBox: a modal prompt at the top of the window is a worse place to type
+   * than the panel that is about to show the answer, and it hides the suggestions.
+   */
+  async function askFlow(prefill?: string): Promise<void> {
+    await vscode.commands.executeCommand('workbench.view.extension.claudeCodeTour');
+    panel.postMessage({ type: 'focusInput', prefill });
+  }
+
+  /** Turn the current selection into a question without the user phrasing one. */
+  async function explainSelection(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      await askFlow();
       return;
     }
-    await vscode.commands.executeCommand('workbench.view.extension.claudeCodeTour');
-    await ask(question.trim());
+    const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    const relative = folder
+      ? vscode.workspace.asRelativePath(editor.document.uri, false)
+      : editor.document.fileName;
+
+    const sel = editor.selection;
+    if (sel.isEmpty) {
+      await askFlow(`Walk me through ${relative} — what does it do and how does it fit together?`);
+      return;
+    }
+    const startLine = sel.start.line + 1;
+    const endLine = sel.end.line + 1;
+    const where = startLine === endLine ? `line ${startLine}` : `lines ${startLine}-${endLine}`;
+    await askFlow(`Explain ${relative} ${where}: what does this code do, and what else does it touch?`);
   }
 
   panel.setMessageHandler((msg: WebviewToExtensionMessage) => {
@@ -128,6 +148,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(TourPanel.viewType, panel),
     vscode.commands.registerCommand('claudeCodeTour.ask', () => void askFlow()),
+    vscode.commands.registerCommand('claudeCodeTour.explainSelection', () => void explainSelection()),
     vscode.commands.registerCommand('claudeCodeTour.next', () => controller.next()),
     vscode.commands.registerCommand('claudeCodeTour.prev', () => controller.prev()),
     vscode.commands.registerCommand('claudeCodeTour.end', () => controller.end()),

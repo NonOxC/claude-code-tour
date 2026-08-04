@@ -53,6 +53,8 @@ export type ExtensionToWebviewMessage =
    * is the worst failure mode for a teaching tool.
    */
   | { type: 'step'; index: number; resolution: StepResolution; note?: string }
+  /** Put the cursor in the panel's own Ask box, optionally seeding it. */
+  | { type: 'focusInput'; prefill?: string }
   | { type: 'idle' };
 
 export const TOUR_PLAN_JSON_SCHEMA = {

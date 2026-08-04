@@ -19,6 +19,9 @@
   const nextBtn = /** @type {HTMLButtonElement} */ (document.getElementById('next-btn'));
   const endBtn = /** @type {HTMLButtonElement} */ (document.getElementById('end-btn'));
   const outlineEl = document.getElementById('outline');
+  const welcomeEl = document.getElementById('welcome');
+  const progressTrackEl = document.getElementById('progress-track');
+  const progressBarEl = document.getElementById('progress-bar');
 
   const state = { plan: null, index: 0, resolution: 'exact', note: '' };
 
@@ -70,6 +73,9 @@
     snapshotEl.open = false;
     snapshotCodeEl.textContent = '';
     outlineEl.textContent = '';
+    welcomeEl.hidden = false;
+    progressTrackEl.hidden = true;
+    progressBarEl.style.width = '0%';
     prevBtn.disabled = true;
     nextBtn.disabled = true;
     endBtn.disabled = true;
@@ -115,6 +121,15 @@
     stepTitleEl.textContent = step.title;
     stepExplanationEl.textContent = step.explanation;
 
+    progressTrackEl.hidden = false;
+    progressBarEl.style.width = `${((state.index + 1) / state.plan.steps.length) * 100}%`;
+
+    // Retrigger the enter animation: removing and re-adding in the same frame is
+    // coalesced away, so force a reflow between the two.
+    stepPanelEl.classList.remove('is-entering');
+    void stepPanelEl.offsetWidth;
+    stepPanelEl.classList.add('is-entering');
+
     // Anything but an exact hit has to be visible: a teaching tool that confidently
     // explains the wrong lines is worse than one that admits it lost its place.
     const trustworthy = state.resolution === 'exact';
@@ -151,6 +166,15 @@
     vscode.postMessage({ type: 'ask', question });
   });
 
+  // One-click starters, so the panel is usable without thinking up a question.
+  for (const btn of document.querySelectorAll('.suggestion')) {
+    btn.addEventListener('click', () => {
+      const question = btn.textContent.trim();
+      questionInput.value = question;
+      vscode.postMessage({ type: 'ask', question });
+    });
+  }
+
   prevBtn.addEventListener('click', () => vscode.postMessage({ type: 'prev' }));
   nextBtn.addEventListener('click', () => vscode.postMessage({ type: 'next' }));
   endBtn.addEventListener('click', () => vscode.postMessage({ type: 'end' }));
@@ -171,10 +195,19 @@
   window.addEventListener('message', (event) => {
     const msg = event.data;
     switch (msg.type) {
+      case 'focusInput':
+        if (typeof msg.prefill === 'string' && msg.prefill) {
+          questionInput.value = msg.prefill;
+        }
+        questionInput.focus();
+        questionInput.select();
+        break;
       case 'loading':
         setBusy(true);
         startTimer(msg.question);
         summaryEl.textContent = '';
+        welcomeEl.hidden = true;
+        progressTrackEl.hidden = true;
         stepPanelEl.classList.remove('is-visible');
         outlineEl.textContent = '';
         prevBtn.disabled = true;
@@ -204,6 +237,7 @@
         }
         setStatus(bits.length ? `Tour ready · ${bits.join(' · ')}` : '', false);
         summaryEl.textContent = msg.plan.summary;
+        welcomeEl.hidden = true;
         renderStep();
         break;
       }

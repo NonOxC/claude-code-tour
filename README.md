@@ -19,9 +19,15 @@ Honest status: the full suite is run on Windows. The POSIX resolution branch is 
 
 ## Usage
 
-1. Open a folder/workspace.
-2. Run **Claude Code Tour: Ask About This Code** from the Command Palette, or open the Claude Code Tour view in the Activity Bar and type a question.
-3. Use **Next** / **Prev** in the sidebar to step through the tour; the editor jumps to and highlights each step.
+Open a folder, then click the **mortarboard icon** in the Activity Bar. The panel has a question box and one-click starters — no command palette required.
+
+Three ways in:
+
+- **Type a question** in the panel, or click a suggested starter.
+- **Select code → right-click → Explain This With a Tour.** The question is written for you from the file and line range.
+- **Command Palette → Claude Code Tour: Ask About This Code**, which just focuses the panel's input.
+
+Then step through with **Next** / **Prev**, the arrow keys, `Alt+←` / `Alt+→` from anywhere, or by clicking any step in the outline. The editor scrolls to each range and pulses it briefly so your eye can find it.
 
 ## Settings
 

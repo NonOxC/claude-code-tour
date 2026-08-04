@@ -97,6 +97,20 @@ export class TourPanel implements vscode.WebviewViewProvider {
       <div id="status"></div>
       <button id="cancel-btn" type="button" hidden>Cancel</button>
     </div>
+
+    <div id="progress-track" hidden><div id="progress-bar"></div></div>
+
+    <div id="welcome">
+      <p class="welcome-lead">Ask anything about this codebase and get a guided walkthrough.</p>
+      <div id="suggestions">
+        <button class="suggestion" type="button">How is this project structured?</button>
+        <button class="suggestion" type="button">Where does the app start, and what happens first?</button>
+        <button class="suggestion" type="button">How does data flow through this app?</button>
+        <button class="suggestion" type="button">Where is state managed?</button>
+      </div>
+      <p class="welcome-hint">Tip: select code in the editor, right-click, and choose <em>Explain This With a Tour</em>.</p>
+    </div>
+
     <div id="summary"></div>
 
     <div id="step-panel">

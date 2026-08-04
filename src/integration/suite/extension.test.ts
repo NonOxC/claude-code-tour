@@ -34,9 +34,40 @@ suite('activation', () => {
       'claudeCodeTour.next',
       'claudeCodeTour.prev',
       'claudeCodeTour.end',
+      'claudeCodeTour.explainSelection',
     ]) {
       assert.ok(registered.includes(id), `command ${id} was never registered`);
     }
+  });
+
+  test('every contributed command and menu entry points at a real command', async () => {
+    const ext = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(ext);
+    await ext.activate();
+    const registered = await vscode.commands.getCommands(true);
+
+    const contributes = ext.packageJSON.contributes ?? {};
+    const declared = new Set<string>((contributes.commands ?? []).map((c: { command: string }) => c.command));
+    for (const id of declared) {
+      assert.ok(registered.includes(id), `package.json declares ${id} but nothing registers it`);
+    }
+
+    // A menu or keybinding referencing a command that does not exist silently does
+    // nothing when clicked, which is the kind of thing only a real host catches.
+    const menuRefs = Object.values(contributes.menus ?? {}).flat() as { command?: string }[];
+    for (const entry of menuRefs) {
+      if (entry.command) {
+        assert.ok(declared.has(entry.command), `menu references undeclared command ${entry.command}`);
+      }
+    }
+    for (const kb of (contributes.keybindings ?? []) as { command: string }[]) {
+      assert.ok(declared.has(kb.command), `keybinding references undeclared command ${kb.command}`);
+    }
+  });
+
+  test('explainSelection is safe to invoke with no active editor', async () => {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await vscode.commands.executeCommand('claudeCodeTour.explainSelection');
   });
 
   test('the declared settings are readable with their documented defaults', async () => {

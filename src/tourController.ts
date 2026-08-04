@@ -16,6 +16,8 @@ export class TourController implements vscode.Disposable {
   private index = 0;
   private workspaceRoot = '';
   private readonly decorationType: vscode.TextEditorDecorationType;
+  private readonly arrivalFlashType: vscode.TextEditorDecorationType;
+  private flashTimer: ReturnType<typeof setTimeout> | undefined;
   /**
    * Bumped on every new request and on end(). Every async continuation re-checks it
    * before touching the editor, so a slow file-open from a superseded step can't
@@ -33,6 +35,15 @@ export class TourController implements vscode.Disposable {
       backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
       overviewRulerColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
       overviewRulerLane: vscode.OverviewRulerLane.Full,
+    });
+    // A brighter decoration laid over the steady one for a moment on arrival, so the
+    // eye can find the new range after the editor scrolls. VS Code gives decorations
+    // a CSS transition, so removing it fades out rather than snapping.
+    this.arrivalFlashType = vscode.window.createTextEditorDecorationType({
+      isWholeLine: true,
+      backgroundColor: new vscode.ThemeColor('editor.selectionHighlightBackground'),
+      border: '1px solid',
+      borderColor: new vscode.ThemeColor('focusBorder'),
     });
 
     // A file decorated while visible keeps its decoration when pushed to a background
@@ -63,6 +74,7 @@ export class TourController implements vscode.Disposable {
         return;
       }
       this.plan = plan;
+      this.setActiveContext(true);
       this.index = 0;
       this.workspaceRoot = options.workspaceRoot;
       // Snapshot before handing the plan to the webview, so a step that later fails
@@ -127,13 +139,18 @@ export class TourController implements vscode.Disposable {
     this.cancelInFlight();
     this.clearDecorations();
     this.plan = undefined;
+    this.setActiveContext(false);
     this.index = 0;
     this.post({ type: 'idle' });
   }
 
   dispose(): void {
     this.cancelInFlight();
+    if (this.flashTimer) {
+      clearTimeout(this.flashTimer);
+    }
     this.decorationType.dispose();
+    this.arrivalFlashType.dispose();
     for (const d of this.disposables) {
       d.dispose();
     }
@@ -171,10 +188,31 @@ export class TourController implements vscode.Disposable {
   }
 
   private clearDecorations(): void {
+    if (this.flashTimer) {
+      clearTimeout(this.flashTimer);
+      this.flashTimer = undefined;
+    }
     for (const editor of vscode.window.visibleTextEditors) {
       editor.setDecorations(this.decorationType, []);
+      editor.setDecorations(this.arrivalFlashType, []);
     }
     this.decoratedUri = undefined;
+  }
+
+  private flashArrival(editor: vscode.TextEditor, range: vscode.Range): void {
+    if (this.flashTimer) {
+      clearTimeout(this.flashTimer);
+    }
+    editor.setDecorations(this.arrivalFlashType, [range]);
+    this.flashTimer = setTimeout(() => {
+      this.flashTimer = undefined;
+      // Only clear our own flash; the steady highlight stays put.
+      editor.setDecorations(this.arrivalFlashType, []);
+    }, 700);
+  }
+
+  private setActiveContext(active: boolean): void {
+    void vscode.commands.executeCommand('setContext', 'claudeCodeTour.active', active);
   }
 
   /**
@@ -281,7 +319,12 @@ export class TourController implements vscode.Disposable {
     this.clearDecorations();
     editor.setDecorations(this.decorationType, [resolved.range]);
     this.decoratedUri = doc.uri.toString();
-    editor.revealRange(resolved.range, vscode.TextEditorRevealType.InCenter);
+
+    // InCenterIfOutsideViewport, not InCenter: re-centering a range that is already
+    // on screen yanks the view for no reason, which reads as jitter when stepping
+    // through several ranges in the same file.
+    editor.revealRange(resolved.range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+    this.flashArrival(editor, resolved.range);
 
     this.post({
       type: 'step',

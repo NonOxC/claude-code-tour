@@ -37,6 +37,12 @@
         "icon": "$(comment-discussion)"
       },
       {
+        "command": "claudeCodeTour.explainSelection",
+        "title": "Explain This With a Tour",
+        "category": "Claude Code Tour",
+        "icon": "$(mortar-board)"
+      },
+      {
         "command": "claudeCodeTour.next",
         "title": "Claude Code Tour: Next Step",
         "icon": "$(arrow-right)"
@@ -76,8 +82,34 @@
           "when": "view == claudeCodeTour.panel",
           "group": "navigation"
         }
+      ],
+      "editor/context": [
+        {
+          "command": "claudeCodeTour.explainSelection",
+          "when": "editorHasSelection",
+          "group": "navigation@9"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "claudeCodeTour.explainSelection",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
       ]
     },
+    "keybindings": [
+      {
+        "command": "claudeCodeTour.next",
+        "key": "alt+right",
+        "when": "claudeCodeTour.active"
+      },
+      {
+        "command": "claudeCodeTour.prev",
+        "key": "alt+left",
+        "when": "claudeCodeTour.active"
+      }
+    ],
     "configuration": {
       "title": "Claude Code Tour",
       "properties": {

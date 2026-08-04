@@ -133,6 +133,8 @@ button:disabled {
   background: transparent;
   color: var(--vscode-foreground);
   padding: 3px 6px;
+  border-left: 2px solid transparent;
+  transition: background-color 140ms ease, border-color 180ms ease, padding-left 180ms ease;
 }
 
 .outline-item:hover:not(:disabled) {
@@ -140,6 +142,8 @@ button:disabled {
 }
 
 .outline-item.is-current {
+  border-left-color: var(--vscode-focusBorder);
+  padding-left: 10px;
   background: var(--vscode-list-activeSelectionBackground);
   color: var(--vscode-list-activeSelectionForeground);
 }
@@ -176,6 +180,79 @@ button:disabled {
   display: block;
 }
 
+/* Each step slides up as it replaces the last one, so a click reads as movement
+   through a sequence rather than text silently swapping in place. */
+#step-panel.is-entering {
+  animation: step-enter 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes step-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#progress-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--vscode-progressBar-background, rgba(128, 128, 128, 0.25));
+  opacity: 0.35;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+#progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: var(--vscode-progressBar-background, var(--vscode-button-background));
+  transition: width 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+#welcome {
+  margin-bottom: 12px;
+}
+
+.welcome-lead {
+  margin: 0 0 10px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
+#suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.suggestion {
+  text-align: left;
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
+  padding: 6px 9px;
+  line-height: 1.35;
+  transition: background-color 140ms ease, transform 140ms ease, border-color 140ms ease;
+}
+
+.suggestion:hover {
+  background: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-focusBorder);
+  transform: translateX(2px);
+}
+
+.welcome-hint {
+  margin: 10px 0 0;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
 #step-progress {
   font-size: 0.85em;
   color: var(--vscode-descriptionForeground);
@@ -206,4 +283,19 @@ button:disabled {
 
 #end-btn:hover:not(:disabled) {
   background: var(--vscode-button-secondaryHoverBackground, rgba(128, 128, 128, 0.15));
+}
+
+/* Motion is decoration here, never information: every animated cue above is also
+   conveyed by colour, position or text, so switching it all off loses nothing. */
+@media (prefers-reduced-motion: reduce) {
+  #step-panel.is-entering {
+    animation: none;
+  }
+  #progress-bar,
+  .suggestion,
+  .outline-item,
+  #question-input,
+  button {
+    transition: none;
+  }
 }
