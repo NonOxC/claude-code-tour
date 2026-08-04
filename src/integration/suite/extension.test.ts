@@ -70,6 +70,19 @@ suite('activation', () => {
     await vscode.commands.executeCommand('claudeCodeTour.explainSelection');
   });
 
+  test('activates on startup so the status bar entry point exists before the panel is opened', async () => {
+    const ext = vscode.extensions.getExtension(EXTENSION_ID);
+    assert.ok(ext);
+    // The panel lives in the Secondary Side Bar, which contributes no Activity Bar
+    // icon. If the extension only woke on first view open, the status bar button -
+    // the one always-visible way in - would not exist until you had already found
+    // the panel some other way.
+    assert.ok(
+      (ext.packageJSON.activationEvents ?? []).includes('onStartupFinished'),
+      'onStartupFinished is required for the status bar item to appear unprompted',
+    );
+  });
+
   test('the declared settings are readable with their documented defaults', async () => {
     const config = vscode.workspace.getConfiguration('claudeCodeTour');
     assert.equal(config.get('claudePath'), 'claude');

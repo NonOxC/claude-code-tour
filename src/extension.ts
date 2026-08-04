@@ -10,6 +10,18 @@ export function activate(context: vscode.ExtensionContext): void {
   const panel = new TourPanel(context.extensionUri);
   const controller = new TourController((msg) => panel.postMessage(msg));
 
+  // A view in the Secondary Side Bar contributes NO Activity Bar icon, and when
+  // that sidebar is closed there is no affordance at all - so without this the
+  // feature is only reachable by keyboard shortcut or command palette. The status
+  // bar is always visible, regardless of which sidebars are open.
+  const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusItem.name = 'Claude Code Tour';
+  statusItem.text = '$(mortar-board) Tour';
+  statusItem.tooltip = 'Ask Claude for a guided tour of this code';
+  statusItem.command = 'claudeCodeTour.ask';
+  statusItem.show();
+  context.subscriptions.push(statusItem);
+
   /** Remembered so a multi-root user isn't re-prompted on every question. */
   let chosenFolder: vscode.WorkspaceFolder | undefined;
 

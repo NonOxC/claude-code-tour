@@ -19,10 +19,13 @@ Honest status: the full suite is run on Windows. The POSIX resolution branch is 
 
 ## Usage
 
-Open a folder, then open the **Secondary Side Bar** (`Ctrl`/`Cmd`+`Alt`+`B`) and pick **Claude Code Tour**. It lives on the right on purpose: the file explorer keeps the left, and the editor stays visible in the middle so you can watch the tour jump between files. The panel has a question box and one-click starters — no command palette required.
+Open a folder and click **🎓 Tour** in the status bar, bottom-left. That opens the panel wherever it lives and puts the cursor in the question box.
 
-Three ways in:
+The panel sits in the **Secondary Side Bar** (right) on purpose: the file explorer keeps the left, and the editor stays visible in the middle so you can watch the tour jump between files. You can also open it with `Ctrl`/`Cmd`+`Alt`+`B`, or drag it anywhere you prefer — the status bar button follows it.
 
+Ways in:
+
+- **🎓 Tour in the status bar** — always visible, opens the panel from anywhere.
 - **Type a question** in the panel, or click a suggested starter.
 - **Select code → right-click → Explain This With a Tour.** The question is written for you from the file and line range.
 - **Command Palette → Claude Code Tour: Ask About This Code**, which just focuses the panel's input.
