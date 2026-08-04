@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { ExtensionToWebviewMessage, StepResolution, TourPlan, TourStep } from './tourTypes';
 import { startTour, RunTourOptions, RunHandle, CancelledError } from './claudeRunner';
@@ -185,13 +186,29 @@ export class TourController implements vscode.Disposable {
     if (!this.workspaceRoot) {
       return undefined;
     }
-    const root = path.resolve(this.workspaceRoot);
-    const abs = path.resolve(root, file);
-    const rel = path.relative(root, abs);
+    const abs = path.resolve(this.workspaceRoot, file);
+
+    // Compare canonical paths. A lexical check alone is defeated by a symlink
+    // inside the workspace pointing out of it, and on macOS it also produces false
+    // rejections because directories like /tmp are themselves symlinks
+    // (/tmp -> /private/tmp), so the two sides would never share a prefix.
+    const canonical = (p: string): string => {
+      try {
+        return fs.realpathSync.native(p);
+      } catch {
+        return path.resolve(p);
+      }
+    };
+
+    const realRoot = canonical(this.workspaceRoot);
+    // The file may legitimately not exist yet; canonicalize its parent instead.
+    const realAbs = fs.existsSync(abs) ? canonical(abs) : path.join(canonical(path.dirname(abs)), path.basename(abs));
+
+    const rel = path.relative(realRoot, realAbs);
     if (rel === '' || rel.startsWith('..') || path.isAbsolute(rel)) {
       return undefined;
     }
-    return abs;
+    return realAbs;
   }
 
   private async showStep(expectedGeneration: number): Promise<void> {

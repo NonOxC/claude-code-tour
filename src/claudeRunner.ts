@@ -1,5 +1,6 @@
 import { spawn, execFile } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { TourPlan, TourStep, TOUR_PLAN_JSON_SCHEMA } from './tourTypes';
 
@@ -40,12 +41,59 @@ const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 
 let cachedCli: { key: string; value: ResolvedCli } | undefined;
 
+/**
+ * True only if `p` is a file this process could actually execute.
+ *
+ * The execute-bit check matters on POSIX: a plain non-executable file named
+ * `claude` sitting earlier in PATH (a wrapper script someone forgot to chmod, say)
+ * would otherwise be selected and then fail with EACCES, while the user's shell -
+ * which requires X_OK and keeps searching - happily finds the real binary further
+ * down. X_OK is meaningless on Windows, where executability comes from the
+ * extension, so it is skipped there.
+ */
 function isExecutableFile(p: string): boolean {
   try {
-    return fs.statSync(p).isFile();
+    if (!fs.statSync(p).isFile()) {
+      return false;
+    }
+    if (process.platform !== 'win32') {
+      fs.accessSync(p, fs.constants.X_OK);
+    }
+    return true;
   } catch {
     return false;
   }
+}
+
+/** Node never expands `~`; without this the setting our own error message tells the user to set is unusable. */
+function expandHome(p: string): string {
+  if (p === '~') {
+    return os.homedir();
+  }
+  if (p.startsWith('~/') || (process.platform === 'win32' && p.startsWith('~\\'))) {
+    return path.join(os.homedir(), p.slice(2));
+  }
+  return p;
+}
+
+/**
+ * Locations to try when PATH comes up empty. On macOS this is the difference
+ * between working and not: an app launched from Finder/Dock does not source
+ * ~/.zshrc, so the extension host can inherit a bare /usr/bin:/bin and miss every
+ * one of these. VS Code usually resolves the shell environment for us, but
+ * "usually" is not something to stake the whole feature on.
+ */
+function wellKnownPosixPaths(base: string): string[] {
+  const home = os.homedir();
+  return [
+    path.join(home, '.local', 'bin', base), // native installer
+    path.join(home, '.claude', 'local', base), // Claude Code local install
+    path.join('/opt/homebrew/bin', base), // Homebrew, Apple Silicon
+    path.join('/usr/local/bin', base), // Homebrew Intel / npm global
+    path.join(home, '.npm-global', 'bin', base),
+    path.join(home, '.bun', 'bin', base),
+    path.join('/usr/bin', base),
+  ];
 }
 
 /**
@@ -79,28 +127,44 @@ export function clearCliCache(): void {
 function resolveUncached(configuredPath: string): ResolvedCli {
   const isWindows = process.platform === 'win32';
 
-  // An explicit, existing path wins - but a shim still needs unwrapping.
-  if (configuredPath && (path.isAbsolute(configuredPath) || configuredPath.includes(path.sep))) {
-    if (isExecutableFile(configuredPath)) {
-      return fromCandidate(configuredPath, isWindows);
+  // An explicit path wins - but `~` has to be expanded first, and a shim still
+  // needs unwrapping. Anthropic's own macOS docs print the path as
+  // `~/.local/bin/claude`, so that is exactly what users paste in here.
+  const configured = expandHome(configuredPath ?? '');
+  if (configured && (path.isAbsolute(configured) || configured.includes(path.sep) || configured.includes('/'))) {
+    if (isExecutableFile(configured)) {
+      return fromCandidate(configured, isWindows);
     }
     throw new CliNotFoundError(
-      `The configured Claude Code CLI path does not exist: ${configuredPath}. Update the "claudeCodeTour.claudePath" setting.`,
+      `The configured Claude Code CLI path is not an executable file: ${configured}. Update the "claudeCodeTour.claudePath" setting.`,
     );
   }
 
-  const base = configuredPath || 'claude';
+  const base = configured || 'claude';
   const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
 
   if (!isWindows) {
     for (const dir of dirs) {
       const candidate = path.join(dir, base);
+      // Keep searching past a non-executable match, the way execvp does.
       if (isExecutableFile(candidate)) {
         return { command: candidate, prefixArgs: [], viaShim: false };
       }
     }
-    // Let spawn do its own lookup as a last resort.
-    return { command: base, prefixArgs: [], viaShim: false };
+    for (const candidate of wellKnownPosixPaths(base)) {
+      if (isExecutableFile(candidate)) {
+        return { command: candidate, prefixArgs: [], viaShim: false };
+      }
+    }
+    // No bare-name fallback: spawn would search the same PATH that just failed,
+    // turning a clean "not found" into an opaque ENOENT and a false claim that we
+    // found the CLI. Say what is actually wrong instead.
+    throw new CliNotFoundError(
+      `Could not find "${base}". If it works in your terminal but not here, this window inherited a limited PATH ` +
+        `(on macOS, launching VS Code from Finder or the Dock does not load your shell profile). ` +
+        `Either quit VS Code and relaunch it with \`code .\` from a terminal, or run \`which ${base}\` and put that ` +
+        `absolute path in the "claudeCodeTour.claudePath" setting.`,
+    );
   }
 
   // Windows: prefer a real .exe, then unwrap an npm shim, then cmd.exe.

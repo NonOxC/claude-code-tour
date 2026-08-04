@@ -6,6 +6,17 @@ Ask Claude a question about your code and get a guided, step-by-step tour: it ex
 
 The [Claude Code CLI](https://claude.com/claude-code) must be installed and logged in. This extension shells out to it (`claude -p ...`) using your existing login — no separate API key needed.
 
+### Platform support
+
+Windows, macOS and Linux. Finding the CLI is the only genuinely platform-specific part, and it differs more than you'd expect:
+
+- **Windows** — Node does no `PATHEXT` resolution, so spawning bare `claude` fails with `ENOENT` even though it works in a terminal. The extension prefers a real `claude.exe`, unwraps an npm `.cmd` shim to its `claude.exe` sibling, and uses `cmd.exe` only as a last resort.
+- **macOS / Linux** — the extension searches `PATH`, skipping non-executable matches the way a shell does, then probes well-known install locations (`~/.local/bin`, `~/.claude/local`, `/opt/homebrew/bin`, `/usr/local/bin`, …).
+
+**If macOS says it can't find the CLI but `claude` works in your terminal**, the cause is almost always that an app launched from Finder or the Dock doesn't load your shell profile, so VS Code inherited a minimal `PATH`. Two fixes: relaunch VS Code with `code .` from a terminal, or run `which claude` and put that absolute path in `claudeCodeTour.claudePath` (`~` is supported).
+
+Honest status: the full suite is run on Windows. The POSIX resolution branch is covered by tests that execute on macOS/Linux and by platform-stubbed control-flow checks, but it has not been run on real Apple hardware. If you hit something, please open an issue.
+
 ## Usage
 
 1. Open a folder/workspace.

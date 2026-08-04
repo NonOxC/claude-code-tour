@@ -11,6 +11,7 @@
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { runTour, RunTourOptions, resolveClaudeCli, clearCliCache, CliNotFoundError } from '../claudeRunner';
@@ -19,6 +20,7 @@ import {
   FakeCli,
   SAMPLE_STEPS,
   installFakeCli,
+  makeFakeClaudeBinary,
   makeTempDir,
   removeTempDir,
   successEnvelope,
@@ -336,6 +338,84 @@ describe('runTour - process failures', () => {
       assert.match(err.message, /more data than expected/);
       assert.ok(/narrower question/.test(err.message), `should suggest a fix, got: ${err.message}`);
     });
+  });
+
+  it('expands a leading ~ in the configured path', async (t) => {
+    // The macOS install docs print the path as ~/.local/bin/claude, so this is
+    // literally what a user pastes into the setting.
+    const home = os.homedir();
+    const dir = fs.mkdtempSync(path.join(home, '.cct-tilde-'));
+    const exe = makeFakeClaudeBinary(dir, 'claude');
+    try {
+      clearCliCache();
+      const tildePath = path.join('~', path.relative(home, exe)).split(path.sep).join('/');
+      const resolved = resolveClaudeCli(tildePath);
+      assert.equal(resolved.command, exe, `~ was not expanded (tried ${tildePath})`);
+    } finally {
+      clearCliCache();
+      removeTempDir(dir);
+    }
+  });
+
+  it('finds an executable on PATH and skips a non-executable shadow (POSIX)', async (t) => {
+    if (process.platform === 'win32') {
+      t.skip('execute-bit semantics are POSIX-only');
+      return;
+    }
+    // A non-executable `claude` earlier in PATH must not shadow the real one: the
+    // shell keeps searching past it, and so must we.
+    const shadowDir = makeTempDir('cct-shadow-');
+    const realDir = makeTempDir('cct-real-');
+    const shadow = path.join(shadowDir, 'claude');
+    fs.writeFileSync(shadow, '#!/bin/sh\necho shadow\n', 'utf8');
+    fs.chmodSync(shadow, 0o644); // readable, NOT executable
+    const real = path.join(realDir, 'claude');
+    fs.writeFileSync(real, '#!/bin/sh\necho real\n', 'utf8');
+    fs.chmodSync(real, 0o755);
+
+    const originalPath = process.env.PATH;
+    try {
+      clearCliCache();
+      process.env.PATH = [shadowDir, realDir].join(path.delimiter);
+      const resolved = resolveClaudeCli('claude');
+      assert.equal(resolved.command, fs.realpathSync(real), 'the non-executable shadow must be skipped');
+    } finally {
+      process.env.PATH = originalPath;
+      clearCliCache();
+      removeTempDir(shadowDir);
+      removeTempDir(realDir);
+    }
+  });
+
+  it('throws an actionable not-found error instead of a bare-name fallback (POSIX)', async (t) => {
+    if (process.platform === 'win32') {
+      t.skip('POSIX-only resolution branch');
+      return;
+    }
+    // Falling back to bare "claude" would make preflight claim it FOUND the CLI and
+    // then fail with an opaque ENOENT. The error must name the real cause instead.
+    const emptyDir = makeTempDir('cct-empty-');
+    const originalPath = process.env.PATH;
+    try {
+      clearCliCache();
+      process.env.PATH = emptyDir;
+      let caught: Error | undefined;
+      try {
+        resolveClaudeCli('definitely-not-claude-xyz');
+      } catch (err) {
+        caught = err as Error;
+      }
+      assert.ok(caught instanceof CliNotFoundError, 'must throw CliNotFoundError, not fall back to a bare name');
+      assert.match(caught.message, /PATH/, 'should explain that PATH is the likely cause');
+      assert.ok(
+        caught.message.includes('claudeCodeTour.claudePath'),
+        'should name the setting the user can fix',
+      );
+    } finally {
+      process.env.PATH = originalPath;
+      clearCliCache();
+      removeTempDir(emptyDir);
+    }
   });
 
   it('unwraps a Windows .cmd shim to the real executable instead of failing', async (t) => {
