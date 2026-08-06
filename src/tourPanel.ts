@@ -94,6 +94,12 @@ export class TourPanel implements vscode.WebviewViewProvider {
     </form>
 
     <div id="status-row">
+      <!-- A squiggle that draws and redraws itself while a tour is being
+           generated, so the wait reads as someone sketching rather than a
+           frozen panel. Hidden unless busy. -->
+      <svg id="doodle" viewBox="0 0 48 16" aria-hidden="true" hidden>
+        <path pathLength="100" d="M2 9 C 6 2, 9 2, 12 8 S 18 15, 22 8 S 28 1, 32 8 S 39 15, 46 6" />
+      </svg>
       <div id="status"></div>
       <button id="cancel-btn" type="button" hidden>Cancel</button>
     </div>

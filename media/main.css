@@ -55,6 +55,49 @@ button:disabled {
   color: var(--vscode-descriptionForeground);
 }
 
+/* The sketching squiggle shown while a tour is generated. The path is stroked
+   with a dash as long as the path itself, so animating the offset makes the
+   line draw on, then retreat, over and over.
+
+   pathLength="100" on the element normalises the geometry to 100 units, so the
+   dash numbers below need no re-measuring if the `d` attribute is redrawn. It
+   has to live in the markup: browsers do not accept pathLength from CSS. */
+#doodle {
+  flex: none;
+  width: 48px;
+  height: 16px;
+  margin-top: 0.15em;
+  overflow: visible;
+}
+
+#doodle path {
+  fill: none;
+  stroke: var(--vscode-textLink-foreground, var(--vscode-descriptionForeground));
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: doodle-draw 2.4s ease-in-out infinite;
+}
+
+@keyframes doodle-draw {
+  0%   { stroke-dashoffset: 100; opacity: 0.35; }
+  45%  { stroke-dashoffset: 0;   opacity: 1; }
+  70%  { stroke-dashoffset: 0;   opacity: 1; }
+  100% { stroke-dashoffset: -100; opacity: 0.35; }
+}
+
+/* Anyone who has asked for less motion still gets the squiggle, just drawn once
+   and left alone rather than looping. */
+@media (prefers-reduced-motion: reduce) {
+  #doodle path {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
 #status.is-error {
   color: var(--vscode-errorForeground);
   white-space: pre-wrap;
