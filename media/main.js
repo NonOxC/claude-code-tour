@@ -22,28 +22,83 @@
   const welcomeEl = document.getElementById('welcome');
   const progressTrackEl = document.getElementById('progress-track');
   const progressBarEl = document.getElementById('progress-bar');
+  const doodleEl = document.getElementById('doodle');
 
   const state = { plan: null, index: 0, resolution: 'exact', note: '' };
 
+  // Generating a tour takes tens of seconds. A single frozen line makes that
+  // feel broken, so the status cycles through these while it works. They are
+  // deliberately about poking around a codebase rather than generic "Loading",
+  // and the list is long enough that a normal wait never shows a repeat.
+  const LOADING_PHRASES = [
+    'Spelunking',
+    'Doodling',
+    'Pontificating',
+    'Rummaging',
+    'Untangling',
+    'Excavating',
+    'Sleuthing',
+    'Cartographing',
+    'Perusing',
+    'Noodling',
+    'Ruminating',
+    'Meandering',
+    'Foraging',
+    'Deciphering',
+    'Pondering',
+    'Tracing',
+    'Wandering',
+    'Surveying',
+    'Woolgathering',
+    'Bushwhacking',
+    'Percolating',
+    'Cogitating',
+  ];
+  const PHRASE_MS = 2400;
+
   let elapsedTimer = null;
+  let phraseTimer = null;
+  let phrase = LOADING_PHRASES[0];
   let startedAt = 0;
+
+  // Picks a phrase that is not the one already showing, so a rotation is always
+  // visible even when the random draw repeats.
+  function nextPhrase() {
+    if (LOADING_PHRASES.length < 2) return LOADING_PHRASES[0];
+    let pick = phrase;
+    while (pick === phrase) {
+      pick = LOADING_PHRASES[Math.floor(Math.random() * LOADING_PHRASES.length)];
+    }
+    return pick;
+  }
 
   function stopTimer() {
     if (elapsedTimer !== null) {
       clearInterval(elapsedTimer);
       elapsedTimer = null;
     }
+    if (phraseTimer !== null) {
+      clearInterval(phraseTimer);
+      phraseTimer = null;
+    }
+    if (doodleEl) doodleEl.hidden = true;
   }
 
   function startTimer(question) {
     stopTimer();
     startedAt = Date.now();
+    phrase = nextPhrase();
+    if (doodleEl) doodleEl.hidden = false;
     const tick = () => {
       const secs = Math.floor((Date.now() - startedAt) / 1000);
-      statusEl.textContent = `Exploring the codebase… ${secs}s · "${question}"`;
+      statusEl.textContent = `${phrase}… ${secs}s · "${question}"`;
     };
     tick();
     elapsedTimer = setInterval(tick, 1000);
+    phraseTimer = setInterval(() => {
+      phrase = nextPhrase();
+      tick();
+    }, PHRASE_MS);
   }
 
   function setBusy(busy) {
